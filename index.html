@@ -41,6 +41,7 @@ button, textarea { font: inherit; }
 .avatar { width:30px;height:30px;border-radius:50%;background:#d9ccff;color:#3d287e;display:grid;place-items:center;font-weight:800; }
 .main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:100vh; }
 .topbar { height:66px; border-bottom:1px solid light-dark(#e5e2ed,#242333); display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:light-dark(#faf9fd,#0e0e18); }
+.creator-credit { font-size:11px; font-weight:700; letter-spacing:.2px; color:light-dark(#777387,#aaa6bb); margin-right:auto; margin-left:18px; }
 .model-pill { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; }
 .dot { width:8px;height:8px;border-radius:50%;background:#44d49a;box-shadow:0 0 0 4px #44d49a20; }
 .top-actions { display:flex; gap:9px; align-items:center; }
@@ -102,7 +103,7 @@ textarea { width:100%;resize:none;border:0;outline:0;background:transparent;colo
     </div>
   </aside>
   <main class="main">
-    <header class="topbar"><div class="model-pill"><span class="dot"></span> AI Boys <span style="font-weight:400;color:#9692a4">· AI backend required</span></div><div class="top-actions"><button class="ghost" id="plansTop">✦ Upgrade plan</button></div></header>
+    <header class="topbar"><div class="model-pill"><span class="dot"></span> AI Boys <span style="font-weight:400;color:#9692a4">· AI backend required</span></div><span class="creator-credit">Creator: Ayoub oummih</span><div class="top-actions"><button class="ghost" id="plansTop">✦ Upgrade plan</button></div></header>
     <section class="content" id="content">
       <div class="welcome" id="welcome">
         <div class="spark">✦</div>
