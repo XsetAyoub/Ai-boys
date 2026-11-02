@@ -129,6 +129,7 @@ textarea { width:100%;resize:none;border:0;outline:0;background:transparent;colo
 <script>
 const $ = (id) => document.getElementById(id);
 const promptBox = $('prompt');
+const AI_API_URL = 'https://ai-boys-brain.YOUR-SUBDOMAIN.workers.dev'; // Replace with your deployed Cloudflare Worker URL
 const messages = $('messages');
 let chatCount = 0;
 let chats = [];
@@ -154,7 +155,7 @@ async function respond(userText){
  const history=(chat?.messages||[]).map(m=>({role:m.who==='user'?'user':'assistant',content:m.text}));
  const typing=addMessage('AI Boys is thinking…','bot');
  try{
-  const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,system:'You are AI Boys, a helpful, warm, conversational assistant. Answer naturally and clearly like a capable general-purpose AI assistant. Understand context, remember the conversation, explain step by step when useful, ask focused follow-up questions, and be honest about uncertainty. Do not claim to be ChatGPT or OpenAI.'})});
+  const response=await fetch(AI_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,system:'You are AI Boys, a helpful, warm, conversational assistant. Answer naturally and clearly like a capable general-purpose AI assistant. Understand context, remember the conversation, explain step by step when useful, ask focused follow-up questions, and be honest about uncertainty. Do not claim to be ChatGPT or OpenAI.'})});
   if(!response.ok)throw new Error('AI server returned '+response.status);
   const data=await response.json();
   const reply=data.reply||data.choices?.[0]?.message?.content;
