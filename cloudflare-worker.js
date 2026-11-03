@@ -1,71 +1,92 @@
 const ALLOWED_ORIGIN = "https://xsetayoub.github.io";
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-2.5-flash-lite";
 
-export default {
-  async fetch(request, env) {
-    const origin = request.headers.get("Origin") || "";
-    const corsHeaders = {
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
       "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Vary": "Origin"
-    };
+    }
+  });
+}
 
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+export default {
+  async fetch(request, env) {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Vary": "Origin"
+        }
+      });
+    }
 
-    const url = new URL(request.url);
-    if (url.pathname !== "/api/chat") return Response.json({ error: "Not found" }, { status: 404, headers: corsHeaders });
-    if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
-    if (origin !== ALLOWED_ORIGIN) return Response.json({ error: "Origin not allowed" }, { status: 403, headers: corsHeaders });
-    if (!env.GEMINI_API_KEY) return Response.json({ error: "Cloudflare is missing the GEMINI_API_KEY secret." }, { status: 500, headers: corsHeaders });
+    if (request.headers.get("Origin") !== ALLOWED_ORIGIN) return json({ error: "Origin not allowed." }, 403);
+    if (request.method !== "POST") return json({ error: "Use POST." }, 405);
+    if (!env.GEMINI_API_KEY) return json({ error: "Cloudflare is missing the GEMINI_API_KEY secret." }, 503);
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "Invalid JSON." }, 400);
+    }
+
+    if (!Array.isArray(body.messages) || !body.messages.length) return json({ error: "No messages provided." }, 400);
+
+    const contents = [];
+    for (const item of body.messages.slice(-20)) {
+      if (!item || !["user", "assistant"].includes(item.role) || typeof item.content !== "string") continue;
+      const content = item.content.trim().slice(0, 12000);
+      if (!content) continue;
+      const role = item.role === "assistant" ? "model" : "user";
+      const previous = contents[contents.length - 1];
+      if (previous && previous.role === role) previous.parts[0].text += "\n\n" + content;
+      else contents.push({ role, parts: [{ text: content }] });
+    }
+
+    while (contents.length && contents[0].role !== "user") contents.shift();
+    if (!contents.length || contents[contents.length - 1].role !== "user") return json({ error: "A user message is required." }, 400);
 
     try {
-      const body = await request.json();
-      const messages = Array.isArray(body.messages) ? body.messages : [];
-      const contents = messages
-        .filter((m) => m && typeof m.content === "string" && ["user", "assistant"].includes(m.role))
-        .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-
-      if (!contents.length || contents[contents.length - 1].role !== "user") {
-        return Response.json({ error: "A user message is required." }, { status: 400, headers: corsHeaders });
-      }
-
-      const systemText = typeof body.system === "string" ? body.system : "You are AI Boys, a helpful assistant.";
-      const apiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+      const upstream = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemText }] },
+            systemInstruction: {
+              parts: [{ text: typeof body.system === "string" ? body.system : "You are AI Boys, a helpful, friendly general-purpose AI assistant. Be conversational, clear, thoughtful, and honest. Never claim to be ChatGPT or OpenAI." }]
+            },
             contents,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
           })
         }
       );
 
-      const data = await apiResponse.json().catch(() => ({}));
-      if (!apiResponse.ok) {
-        return Response.json(
-          { error: data?.error?.message || `Gemini returned HTTP ${apiResponse.status}.`, providerStatus: apiResponse.status },
-          { status: 502, headers: corsHeaders }
-        );
+      const result = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        const detail = result?.error?.message || `Gemini returned HTTP ${upstream.status}.`;
+        return json({ error: detail, providerStatus: upstream.status }, 502);
       }
 
-      const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+      const reply = result.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim();
       if (!reply) {
-        const reason = data.promptFeedback?.blockReason
-          ? `Gemini blocked the prompt: ${data.promptFeedback.blockReason}.`
-          : "Gemini returned no text. Check the model response or safety feedback.";
-        return Response.json({ error: reason }, { status: 502, headers: corsHeaders });
+        const reason = result.promptFeedback?.blockReason
+          ? `Gemini blocked the prompt: ${result.promptFeedback.blockReason}.`
+          : "Gemini returned an empty response.";
+        return json({ error: reason }, 502);
       }
-
-      return Response.json({ reply }, { headers: corsHeaders });
+      return json({ reply });
     } catch (error) {
-      return Response.json(
-        { error: error instanceof Error ? error.message : "Unexpected Worker error." },
-        { status: 500, headers: corsHeaders }
-      );
+      return json({ error: error instanceof Error ? error.message : "Could not connect to the AI provider." }, 502);
     }
   }
 };
