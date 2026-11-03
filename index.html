@@ -156,14 +156,14 @@ async function respond(userText){
  const typing=addMessage('AI Boys is thinking…','bot');
  try{
   const response=await fetch(AI_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,system:'You are AI Boys, a helpful, warm, conversational assistant. Answer naturally and clearly like a capable general-purpose AI assistant. Understand context, remember the conversation, explain step by step when useful, ask focused follow-up questions, and be honest about uncertainty. Do not claim to be ChatGPT or OpenAI.'})});
-  if(!response.ok)throw new Error('AI server returned '+response.status);
+  if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.error||('AI server returned '+response.status));}
   const data=await response.json();
   const reply=data.reply||data.choices?.[0]?.message?.content;
   if(!reply)throw new Error('The AI server returned an empty response.');
   typing.remove();addMessage(reply,'bot');storeMessage(reply,'bot');
  }catch(error){
   typing.remove();
-  const reply='I can’t reach the AI brain yet. The chat interface is ready, but its secure /api/chat backend has not been deployed. No API key should be placed in this webpage. Once the backend is running, I’ll be able to answer with a real AI model.';
+  const reply='AI Boys connection error: '+(error?.message||'Unknown error')+'. Check the Cloudflare Worker settings and try again.';
   addMessage(reply,'bot');storeMessage(reply,'bot');
  }
 }
