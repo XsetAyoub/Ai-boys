@@ -54,7 +54,7 @@ for(let bx=-4;bx<4;bx++)for(let bz=-4;bz<4;bz++){
 }
 // palm trees simple stylized low poly
 function palm(x,z){let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,9,7),mat(0x8d6744));trunk.position.set(x,4.5,z);trunk.castShadow=true;scene.add(trunk);
-let leafmat=mat(0x267d56);for(let i=0;i<7;i++){let a=i*Math.PI*2/7;let leaf=new THREE.Mesh(new ConeGeometry(1.2,8,5),leafmat);leaf.position.set(x+Math.cos(a)*3.1,9,z+Math.sin(a)*3.1);leaf.rotation.z=Math.PI/2;leaf.rotation.y=-a;leaf.castShadow=true;scene.add(leaf)}}
+let leafmat=mat(0x267d56);for(let i=0;i<7;i++){let a=i*Math.PI*2/7;let leaf=new THREE.Mesh(new THREE.ConeGeometry(1.2,8,5),leafmat);leaf.position.set(x+Math.cos(a)*3.1,9,z+Math.sin(a)*3.1);leaf.rotation.z=Math.PI/2;leaf.rotation.y=-a;leaf.castShadow=true;scene.add(leaf)}}
 for(let i=-8;i<=8;i++){palm(i*22, -15);palm(i*22, 15)}
 // player avatar mesh
 const player=new THREE.Group();scene.add(player);
