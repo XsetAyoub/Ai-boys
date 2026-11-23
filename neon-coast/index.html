@@ -71,7 +71,7 @@ function createCar(x,z,color){let g=new THREE.Group();let body=new THREE.Mesh(ne
 let driveCar=createCar(8,4,0x2b91d1);
 for(let i=0;i<14;i++){let cx=(Math.floor(Math.random()*7)-3)*48+10,cz=(Math.floor(Math.random()*7)-3)*48+10;if(Math.hypot(cx,cz)>20)createCar(cx,cz,[0xcc433e,0x56a76b,0xe1bd55,0x777b8e][i%4])}
 for(let i=0;i<16;i++)makeTarget((Math.floor(Math.random()*7)-3)*48+12,(Math.floor(Math.random()*7)-3)*48+12);
-let marker=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,.18,24),new MeshBasicMaterial({color:0x42ffd0}));marker.position.set(50,.2,0);scene.add(marker);
+let marker=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,.18,24),new THREE.MeshBasicMaterial({color:0x42ffd0}));marker.position.set(50,.2,0);scene.add(marker);
 let toastT=0;function toast(msg){let el=document.getElementById('toast');el.textContent=msg;el.style.opacity=1;toastT=2.4}
 let keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e'&&started)toggleCar()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 let started=false;document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';renderer.domElement.requestPointerLock();toast('Checkpoint mission started')};
