@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEON COAST 3D</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#080d12;color:#eaf4ff;font:14px system-ui;overflow:hidden}canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}.panel{background:#07111dc9;border:1px solid #ffffff24;border-radius:12px;padding:10px 13px;backdrop-filter:blur(8px)}
+#left{position:absolute;left:16px;top:16px}#logo{font-weight:900;letter-spacing:2px;color:#62f0bd;font-size:15px}#mission{margin-top:5px;color:#d4e4f5}
+#right{position:absolute;right:16px;top:16px;text-align:right;min-width:130px}#cash{font-weight:900;color:#75f0b7;font-size:21px}#wanted{color:#ffd36d;font-size:18px;letter-spacing:2px}
+#bottom{position:absolute;bottom:16px;left:16px;max-width:420px;color:#c8d5e4;font-size:12px;line-height:1.55}
+#center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:25px;color:#d9ffff;text-shadow:0 0 8px #0ff;display:none}
+#toast{position:absolute;top:24%;left:50%;transform:translateX(-50%);padding:10px 18px;background:#07111dcc;border:1px solid #ffffff22;border-radius:10px;font-weight:700;opacity:0;transition:.25s}
+#start{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(130deg,#06111eea,#102e42e8);z-index:3}
+.card{width:min(560px,calc(100% - 32px));background:#101d2b;border:1px solid #3a5368;border-radius:20px;padding:28px;box-shadow:0 22px 80px #0008}
+h1{font-size:38px;line-height:1;margin:0 0 10px;letter-spacing:1px}h1 span{color:#65e8b8}
+p{color:#c1d2e2;line-height:1.5}button{border:0;border-radius:10px;padding:12px 20px;background:#65e8b8;color:#092219;font-weight:900;cursor:pointer;font-size:15px}button:hover{filter:brightness(1.1)}.hint{color:#91a8bd;font-size:12px}
+</style>
+</head><body>
+<div id="start"><div class="card"><h1>NEON <span>COAST 3D</span></h1>
+<p>Explore a neon coastal city in third person. Walk, drive, take on missions, and practice target shooting in a fictional action game.</p>
+<p><b>Controls</b><br>WASD move · Mouse look · Left click shoot targets · E enter/exit car · Shift sprint · Space handbrake</p>
+<button id="play">ENTER CITY</button><p class="hint">Free browser prototype. Internet connection needed to load the 3D engine.</p></div></div>
+<div id="hud"><div id="left" class="panel"><div id="logo">NEON COAST / 3D</div><div id="mission">Objective: reach the glowing checkpoint</div></div>
+<div id="right" class="panel"><div id="cash">$ 250</div><div id="wanted">☆☆☆☆☆</div><div id="mode">ON FOOT</div></div>
+<div id="bottom" class="panel">WASD: move · Mouse: look · Click: shoot targets · E: car · Shift: sprint · Space: brake<br>Targets are fictional training dummies. Press ESC to release mouse.</div><div id="center">+</div><div id="toast"></div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9bc6d5);scene.fog=new THREE.Fog(0x9bc6d5,80,430);
+const camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.1,900);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xcceaff,0x536050,2));
+const sun=new THREE.DirectionalLight(0xffe0b3,3.1);sun.position.set(-80,130,90);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-130;sun.shadow.camera.right=130;sun.shadow.camera.top=130;sun.shadow.camera.bottom=-130;scene.add(sun);
+const mat=(c,r=.8)=>new THREE.MeshStandardMaterial({color:c,roughness:r});
+const ground= new THREE.Mesh(new THREE.PlaneGeometry(900,900),mat(0x527a70));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;ground.receiveShadow=true;scene.add(ground);
+const roadmat=mat(0x272e34), sidewalk=mat(0xb6b2a5), lineMat=mat(0xe0d5a7), glass=mat(0x63818a,.32);
+function box(x,y,z,sx,sy,sz,m,shadow=true){let mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);mesh.position.set(x,y,z);mesh.castShadow=shadow;mesh.receiveShadow=true;scene.add(mesh);return mesh}
+const roads=[];
+for(let n=-4;n<=4;n++){let p=n*48;box(p,.005,0,13,.03,900,roadmat,false);box(0,.006,p,900,.03,13,roadmat,false);roads.push(p)}
+// lane dashes
+for(let p=-420;p<420;p+=20){box(p,.035,0,2,.02,0.25,lineMat,false);box(0,.035,p,.25,.02,2,lineMat,false)}
+// blocks with variety
+let buildingMats=[0x697782,0x827d77,0x5c747c,0x948a7c,0x566872,0xb09b82].map(c=>mat(c));
+for(let bx=-4;bx<4;bx++)for(let bz=-4;bz<4;bz++){
+ if((bx===0&&bz===0)||Math.random()<.06)continue;
+ let cx=bx*48+24,cz=bz*48+24;
+ let w=17+Math.random()*15,d=16+Math.random()*15,h=14+Math.random()*65;
+ // buildings offset away from street
+ let b=box(cx, h/2,cz,w,h,d,buildingMats[Math.floor(Math.random()*buildingMats.length)]);
+ // window bands as facade panes
+ let winMat=new THREE.MeshStandardMaterial({color:0x9ecbd2,roughness:.3,metalness:.15});
+ for(let yy=5;yy<h-4;yy+=5){for(let xx=-w/2+3;xx<w/2-2;xx+=4){let pane=new THREE.Mesh(new THREE.BoxGeometry(1.3,2.2,.12),winMat);pane.position.set(cx+xx,yy,cz+d/2+.08);scene.add(pane);}}
+ // rooftop trim
+ box(cx,h+.5,cz,w+.6,1,d+.6,mat(0x3e5057),false);
+}
+// palm trees simple stylized low poly
+function palm(x,z){let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,9,7),mat(0x8d6744));trunk.position.set(x,4.5,z);trunk.castShadow=true;scene.add(trunk);
+let leafmat=mat(0x267d56);for(let i=0;i<7;i++){let a=i*Math.PI*2/7;let leaf=new THREE.Mesh(new ConeGeometry(1.2,8,5),leafmat);leaf.position.set(x+Math.cos(a)*3.1,9,z+Math.sin(a)*3.1);leaf.rotation.z=Math.PI/2;leaf.rotation.y=-a;leaf.castShadow=true;scene.add(leaf)}}
+for(let i=-8;i<=8;i++){palm(i*22, -15);palm(i*22, 15)}
+// player avatar mesh
+const player=new THREE.Group();scene.add(player);
+const skin=mat(0xc28c67),shirt=mat(0x22a88a),pants=mat(0x243445),dark=mat(0x18212a);
+let torso=new THREE.Mesh(new THREE.CapsuleGeometry(.65,.7,4,8),shirt);torso.position.y=1.65;torso.castShadow=true;player.add(torso);
+let head=new THREE.Mesh(new THREE.SphereGeometry(.42,16,12),skin);head.position.y=2.65;head.castShadow=true;player.add(head);
+let leg1=new THREE.Mesh(new THREE.BoxGeometry(.34,.95,.4),pants),leg2=leg1.clone();leg1.position.set(-.25,.5,0);leg2.position.set(.25,.5,0);player.add(leg1,leg2);
+let arm1=new THREE.Mesh(new THREE.BoxGeometry(.25,.85,.3),skin),arm2=arm1.clone();arm1.position.set(-.85,1.65,0);arm2.position.set(.85,1.65,0);player.add(arm1,arm2);
+let px=0,pz=0,heading=0,camYaw=0,camPitch=.18,car=null,money=250,missionNum=1,heat=0;
+const targets=[];
+function makeTarget(x,z){let g=new THREE.Group();let base=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,.4,8),mat(0x48515a));base.position.y=.2;g.add(base);let body=new THREE.Mesh(new THREE.CylinderGeometry(.36,.43,1.35,8),mat(0xe6a65b));body.position.y=1.1;g.add(body);let head=new THREE.Mesh(new THREE.SphereGeometry(.38,12,10),mat(0xe4c7a7));head.position.y=2.05;g.add(head);g.position.set(x,0,z);scene.add(g);targets.push(g)}
+// decorative cars, plus driveable one
+function createCar(x,z,color){let g=new THREE.Group();let body=new THREE.Mesh(new THREE.BoxGeometry(2.2,.8,4.3),mat(color,.42));body.position.y=.8;body.castShadow=true;g.add(body);let cabin=new THREE.Mesh(new THREE.BoxGeometry(1.7,.8,2.2),glass);cabin.position.set(0,1.45,-.15);g.add(cabin);let wheelmat=mat(0x17191c);for(let sx of [-1,1])for(let sz of [-1,1]){let w=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,12),wheelmat);w.rotation.z=Math.PI/2;w.position.set(sx*1.12,.42,sz*1.45);g.add(w)}g.position.set(x,0,z);scene.add(g);return g}
+let driveCar=createCar(8,4,0x2b91d1);
+for(let i=0;i<14;i++){let cx=(Math.floor(Math.random()*7)-3)*48+10,cz=(Math.floor(Math.random()*7)-3)*48+10;if(Math.hypot(cx,cz)>20)createCar(cx,cz,[0xcc433e,0x56a76b,0xe1bd55,0x777b8e][i%4])}
+for(let i=0;i<16;i++)makeTarget((Math.floor(Math.random()*7)-3)*48+12,(Math.floor(Math.random()*7)-3)*48+12);
+let marker=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,.18,24),new MeshBasicMaterial({color:0x42ffd0}));marker.position.set(50,.2,0);scene.add(marker);
+let toastT=0;function toast(msg){let el=document.getElementById('toast');el.textContent=msg;el.style.opacity=1;toastT=2.4}
+let keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e'&&started)toggleCar()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let started=false;document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';renderer.domElement.requestPointerLock();toast('Checkpoint mission started')};
+renderer.domElement.addEventListener('click',()=>{if(started&&document.pointerLockElement!==renderer.domElement)renderer.domElement.requestPointerLock();else if(started)shoot()});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){camYaw-=e.movementX*.0022;camPitch=Math.max(-.15,Math.min(.65,camPitch+e.movementY*.0015))}});
+const raycaster=new THREE.Raycaster();
+function shoot(){if(car)return;let direction=new THREE.Vector3(Math.sin(camYaw),0,-Math.cos(camYaw));direction.y=Math.sin(camPitch);direction.normalize();raycaster.set(camera.position,direction);let hits=raycaster.intersectObjects(targets,true);if(hits.length){let obj=hits[0].object;while(obj.parent&&!targets.includes(obj))obj=obj.parent;if(targets.includes(obj)){scene.remove(obj);targets.splice(targets.indexOf(obj),1);money+=25;document.getElementById('cash').textContent='$ '+money;toast('Target cleared +$25')}}}
+function toggleCar(){if(!car){if(player.position.distanceTo(driveCar.position)<4){car=driveCar;player.visible=false;toast('Vehicle entered. Drive!')}else toast('Move close to the blue car to enter')}else{player.visible=true;player.position.copy(car.position);player.position.x+=2.8;car=null;toast('Exited vehicle')}}
+let velocity=0;const clock=new THREE.Clock();
+function update(dt){if(!started)return;
+let forward=keys.w||keys.arrowup,back=keys.s||keys.arrowdown,left=keys.a||keys.arrowleft,right=keys.d||keys.arrowright;
+if(car){let throttle=(forward?1:0)-(back?1:0);velocity+=throttle*18*dt;velocity*=Math.pow(keys.space?.82:.985,dt*60);velocity=Math.max(-8,Math.min(32,velocity));if(left||right)car.rotation.y+=(right?1:-1)*dt*(.8+Math.abs(velocity)*.045)*Math.sign(velocity||1);car.position.x+=Math.sin(car.rotation.y)*velocity*dt;car.position.z+=Math.cos(car.rotation.y)*velocity*dt;player.position.copy(car.position);player.rotation.y=car.rotation.y}
+else{let v=(keys.shift?11:7)*dt;let mx=(right?1:0)-(left?1:0),mz=(back?1:0)-(forward?1:0);let vec=new THREE.Vector3(mx,0,mz);if(vec.length())vec.normalize();vec.applyAxisAngle(new THREE.Vector3(0,1,0),camYaw);player.position.addScaledVector(vec,v);if(vec.length())player.rotation.y=Math.atan2(vec.x,vec.z)}
+if(player.position.distanceTo(marker.position)<4){money+=150;missionNum++;marker.position.set((Math.random()*7-3)*48,0,(Math.random()*7-3)*48);toast('Mission checkpoint reached +$150');}
+marker.rotation.y+=dt*1.2;marker.position.y=.25+Math.sin(clock.elapsedTime*2)*.25;
+}
+function camUpdate(){let focus=car?car.position:player.position;let offset=new THREE.Vector3(Math.sin(camYaw)*10,4.4+camPitch*5,Math.cos(camYaw)*10);camera.position.copy(focus).add(offset);camera.lookAt(focus.x,focus.y+1.3,focus.z)}
+function frame(){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.04);update(dt);camUpdate();if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').style.opacity=0}
+document.getElementById('mission').textContent='Mission '+missionNum+': reach the glowing checkpoint';document.getElementById('mode').textContent=car?'DRIVING':'ON FOOT';document.getElementById('wanted').textContent='★'.repeat(heat)+'☆'.repeat(5-heat);renderer.render(scene,camera)}
+frame();
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script></body></html>
