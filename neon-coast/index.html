@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NEON COAST — Open World</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#080d12;color:#eaf4ff;font:14px system-ui;overflow:hidden}canvas{display:block}
+*{box-sizing:border-box}body{margin:0;background:#d8f0ff;color:#123047;font:14px system-ui;overflow:hidden}canvas{display:block}
 #hud{position:fixed;inset:0;pointer-events:none}.panel{background:#07111dc9;border:1px solid #ffffff24;border-radius:12px;padding:10px 13px;backdrop-filter:blur(8px)}
 #left{position:absolute;left:16px;top:16px}#logo{font-weight:900;letter-spacing:2px;color:#62f0bd;font-size:15px}#mission{margin-top:5px;color:#d4e4f5}
 #right{position:absolute;right:16px;top:16px;text-align:right;min-width:130px}#cash{font-weight:900;color:#75f0b7;font-size:21px}#wanted{color:#ffd36d;font-size:18px;letter-spacing:2px}
@@ -20,26 +20,26 @@ p{color:#c1d2e2;line-height:1.5}button{border:0;border-radius:10px;padding:12px 
 <p><b>Controls</b><br>WASD move · Mouse look · Click checkpoints · E enter/exit car · Shift sprint · Space handbrake</p>
 <button id="play">ENTER CITY</button><p class="hint">Free 3D open-world browser prototype. Internet connection needed to load the 3D engine.</p></div></div>
 <div id="hud"><div id="left" class="panel"><div id="logo">NEON COAST / 3D</div><div id="mission">Objective: reach the glowing checkpoint</div></div>
-<div id="right" class="panel"><div id="cash">$ 250</div><div id="wanted">☆☆☆☆☆</div><div id="mode">ON FOOT</div><div id="weapon">LOADOUT: PISTOL</div></div>
+<div id="right" class="panel"><div id="cash">$ 250</div><div id="wanted">☆☆☆☆☆</div><div id="mode">ON FOOT</div></div>
 <div id="bottom" class="panel">WASD: move · Mouse: look · Click: checkpoint · E: car · Shift: sprint · Space: brake<br>Explore the city. Press ESC to release mouse.</div><div id="center">+</div><div id="toast"></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x8dbed4);scene.fog=new THREE.Fog(0x8dbed4,160,650);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x87ceeb);scene.fog=new THREE.Fog(0x87ceeb,420,1100);
 const camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.1,900);
-const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xcceaff,0x536050,2));
-const sun=new THREE.DirectionalLight(0xffe0b3,3.1);sun.position.set(-80,130,90);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-0.00015;sun.shadow.camera.left=-130;sun.shadow.camera.right=130;sun.shadow.camera.top=130;sun.shadow.camera.bottom=-130;scene.add(sun);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.45;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdff5ff,0x8aa078,3.2));
+const sun=new THREE.DirectionalLight(0xfff4d6,4.2);sun.position.set(-80,130,90);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-0.00015;sun.shadow.camera.left=-130;sun.shadow.camera.right=130;sun.shadow.camera.top=130;sun.shadow.camera.bottom=-130;scene.add(sun);
 const mat=(c,r=.8)=>new THREE.MeshStandardMaterial({color:c,roughness:r});
-const ground= new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),mat(0x456c60));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;ground.receiveShadow=true;scene.add(ground);
-const roadmat=mat(0x242a30,.95), sidewalk=mat(0xb9b8b1), lineMat=mat(0xe3d9ad), glass=mat(0x4f8395,.24);
+const ground= new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),mat(0x6f9c6c));ground.rotation.x=-Math.PI/2;ground.position.y=-.08;ground.receiveShadow=true;scene.add(ground);
+const roadmat=mat(0x50565a,.95), sidewalk=mat(0xd5d2c8), lineMat=mat(0xe3d9ad), glass=mat(0x4f8395,.24);
 function box(x,y,z,sx,sy,sz,m,shadow=true){let mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);mesh.position.set(x,y,z);mesh.castShadow=shadow;mesh.receiveShadow=true;scene.add(mesh);return mesh}
 const roads=[];const buildingColliders=[];
 for(let n=-5;n<=5;n++){let p=n*48;box(p,.005,0,14,.03,1200,roadmat,false);box(0,.006,p,1200,.03,14,roadmat,false);box(p+9,.015,0,3,.1,1200,sidewalk,false);box(p-9,.015,0,3,.1,1200,sidewalk,false);box(0,.015,p+9,1200,.1,3,sidewalk,false);box(0,.015,p-9,1200,.1,3,sidewalk,false);roads.push(p)}
 // lane dashes
 for(let p=-580;p<580;p+=20){box(p,.035,0,2,.02,.24,lineMat,false);box(0,.035,p,.24,.02,2,lineMat,false)}
 // blocks with variety
-let buildingMats=[0x697782,0x827d77,0x5c747c,0x948a7c,0x566872,0xb09b82,0x58646b,0x9b9b91].map(c=>mat(c));
+let buildingMats=[0x9baab4,0xc2b9a9,0x91b3bd,0xd0c7b6,0x8da7b4,0xd3c3a8,0x9aa7a9,0xc9c9bd].map(c=>mat(c));
 for(let bx=-5;bx<5;bx++)for(let bz=-5;bz<5;bz++){
  if((bx===0&&bz===0)||Math.random()<.06)continue;
  let cx=bx*48+24,cz=bz*48+24;
@@ -74,7 +74,7 @@ for(let i=0;i<14;i++){let cx=(Math.floor(Math.random()*7)-3)*48+10,cz=(Math.floo
 
 let marker=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,.18,24),new THREE.MeshBasicMaterial({color:0x42ffd0}));marker.position.set(50,.2,0);scene.add(marker);
 let toastT=0;function toast(msg){let el=document.getElementById('toast');el.textContent=msg;el.style.opacity=1;toastT=2.4}
-let keys={};window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;const menu=document.getElementById('loadout');if(k==='escape'&&menu.style.display==='grid')menu.style.display='none';if(k==='e'&&started&&menu.style.display!=='grid')toggleCar();if(started&&['1','2','3'].includes(e.key)&&menu.style.display!=='grid')chooseTool(Number(e.key));if(started&&k==='q'){menu.style.display=menu.style.display==='grid'?'none':'grid';if(menu.style.display==='grid'&&document.pointerLockElement)document.exitPointerLock();}});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let keys={};window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(k==='e'&&started)toggleCar();});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 let started=false;window.chooseTool=function(n){selectedTool=Math.max(1,Math.min(3,n));document.getElementById('weapon').textContent='LOADOUT: '+toolNames[selectedTool-1];document.getElementById('loadout').style.display='none';toast(toolNames[selectedTool-1]+' selected (arcade)')};document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';renderer.domElement.requestPointerLock();toast('Checkpoint mission started')};
 renderer.domElement.addEventListener('click',()=>{if(started&&document.pointerLockElement!==renderer.domElement)renderer.domElement.requestPointerLock();else if(started&&player.position.distanceTo(marker.position)<5){money+=150;missionNum++;document.getElementById('cash').textContent='$ '+money;marker.position.set((Math.random()*9-4)*48,.2,(Math.random()*9-4)*48);toast('Checkpoint reached! +$150');}});
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){camYaw-=e.movementX*.0022;camPitch=Math.max(-.15,Math.min(.65,camPitch+e.movementY*.0015))}});
@@ -89,7 +89,7 @@ marker.rotation.y+=dt*1.2;marker.position.y=.25+Math.sin(clock.elapsedTime*2)*.2
 }
 function camUpdate(){let focus=car?car.position:player.position;let offset=new THREE.Vector3(Math.sin(camYaw)*10,4.4+camPitch*5,Math.cos(camYaw)*10);camera.position.copy(focus).add(offset);camera.lookAt(focus.x,focus.y+1.3,focus.z)}
 function frame(){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.04);update(dt);camUpdate();if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').style.opacity=0}
-document.getElementById('mission').textContent='Mission '+missionNum+': reach the glowing checkpoint';document.getElementById('mode').textContent=car?'DRIVING':'ON FOOT';document.getElementById('wanted').textContent='★'.repeat(heat)+'☆'.repeat(6-heat);renderer.render(scene,camera)}
+document.getElementById('mission').textContent='Mission '+missionNum+': reach the glowing checkpoint';document.getElementById('mode').textContent=car?'DRIVING':'ON FOOT';document.getElementById('wanted').textContent='DAYTIME';renderer.render(scene,camera)}
 frame();
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script></body></html>
