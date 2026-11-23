@@ -20,8 +20,8 @@ p{color:#c1d2e2;line-height:1.5}button{border:0;border-radius:10px;padding:12px 
 <p><b>Controls</b><br>WASD move · Mouse look · Left click shoot targets · E enter/exit car · Shift sprint · Space handbrake</p>
 <button id="play">ENTER CITY</button><p class="hint">Free browser prototype. Internet connection needed to load the 3D engine.</p></div></div>
 <div id="hud"><div id="left" class="panel"><div id="logo">NEON COAST / 3D</div><div id="mission">Objective: reach the glowing checkpoint</div></div>
-<div id="right" class="panel"><div id="cash">$ 250</div><div id="wanted">☆☆☆☆☆</div><div id="mode">ON FOOT</div></div>
-<div id="bottom" class="panel">WASD: move · Mouse: look · Click: shoot targets · E: car · Shift: sprint · Space: brake<br>Targets are fictional training dummies. Press ESC to release mouse.</div><div id="center">+</div><div id="toast"></div></div>
+<div id="right" class="panel"><div id="cash">$ 250</div><div id="wanted">☆☆☆☆☆</div><div id="mode">ON FOOT</div><div id="weapon">LOADOUT: PISTOL</div></div>
+<div id="bottom" class="panel">WASD: move · Mouse: look · Click: tag training dummies · Q: loadout · 1/2/3: switch tool · E: car · Shift: sprint · Space: brake<br>Fictional arcade tools only; targets are training dummies. Press ESC to release mouse.</div><div id="center">+</div><div id="toast"></div></div><div id="loadout" style="display:none;position:fixed;inset:0;z-index:5;background:#030811dd;place-items:center"><div class="card"><h1>ARCADE <span>LOADOUT</span></h1><p>Select a fictional arcade tool (targets are training dummies only):</p><button onclick="chooseTool(1)">1 · PISTOL</button> <button onclick="chooseTool(2)">2 · RIFLE</button> <button onclick="chooseTool(3)">3 · ROCKET PROP</button><p class="hint">Press Q to close. No real-world weapon behavior is simulated.</p></div></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -52,6 +52,9 @@ for(let bx=-4;bx<4;bx++)for(let bz=-4;bz<4;bz++){
  // rooftop trim
  box(cx,h+.5,cz,w+.6,1,d+.6,mat(0x3e5057),false);
 }
+// Banks and pawn shops around town
+function storefront(x,z,name,color){box(x,2.2,z,15,4.4,10,mat(color),false);box(x,4.8,z+5.15,13,.85,.3,mat(0xf3e6c7),false);const cv=document.createElement("canvas");cv.width=512;cv.height=128;const ctx=cv.getContext("2d");ctx.fillStyle="#102433";ctx.fillRect(0,0,512,128);ctx.fillStyle="#f5d37b";ctx.font="bold 64px sans-serif";ctx.textAlign="center";ctx.fillText(name,256,86);const tx=new THREE.CanvasTexture(cv);const label=new THREE.Mesh(new THREE.PlaneGeometry(12.5,.72),new THREE.MeshBasicMaterial({map:tx}));label.position.set(x,4.8,z+5.33);scene.add(label);box(x,1.3,z+5.18,2.5,2.5,.12,glass,false);}
+storefront(-72,18,"COAST BANK",0x88755c);storefront(72,-18,"CITY BANK",0x777c88);storefront(-120,-90,"PAWN & TRADE",0x89664c);storefront(120,90,"PAWN SHOP",0x9a7655);
 // palm trees simple stylized low poly
 function palm(x,z){let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,9,7),mat(0x8d6744));trunk.position.set(x,4.5,z);trunk.castShadow=true;scene.add(trunk);
 let leafmat=mat(0x267d56);for(let i=0;i<7;i++){let a=i*Math.PI*2/7;let leaf=new THREE.Mesh(new THREE.ConeGeometry(1.2,8,5),leafmat);leaf.position.set(x+Math.cos(a)*3.1,9,z+Math.sin(a)*3.1);leaf.rotation.z=Math.PI/2;leaf.rotation.y=-a;leaf.castShadow=true;scene.add(leaf)}}
@@ -63,7 +66,7 @@ let torso=new THREE.Mesh(new THREE.CapsuleGeometry(.65,.7,4,8),shirt);torso.posi
 let head=new THREE.Mesh(new THREE.SphereGeometry(.42,16,12),skin);head.position.y=2.65;head.castShadow=true;player.add(head);
 let leg1=new THREE.Mesh(new THREE.BoxGeometry(.34,.95,.4),pants),leg2=leg1.clone();leg1.position.set(-.25,.5,0);leg2.position.set(.25,.5,0);player.add(leg1,leg2);
 let arm1=new THREE.Mesh(new THREE.BoxGeometry(.25,.85,.3),skin),arm2=arm1.clone();arm1.position.set(-.85,1.65,0);arm2.position.set(.85,1.65,0);player.add(arm1,arm2);
-let px=0,pz=0,heading=0,camYaw=0,camPitch=.18,car=null,money=250,missionNum=1,heat=0;
+let px=0,pz=0,heading=0,camYaw=0,camPitch=.18,car=null,money=250,missionNum=1,heat=0,selectedTool=1;const toolNames=["PISTOL","ARCADE RIFLE","ROCKET PROP"];const police=[];
 const targets=[];
 function makeTarget(x,z){let g=new THREE.Group();let base=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,.4,8),mat(0x48515a));base.position.y=.2;g.add(base);let body=new THREE.Mesh(new THREE.CylinderGeometry(.36,.43,1.35,8),mat(0xe6a65b));body.position.y=1.1;g.add(body);let head=new THREE.Mesh(new THREE.SphereGeometry(.38,12,10),mat(0xe4c7a7));head.position.y=2.05;g.add(head);g.position.set(x,0,z);scene.add(g);targets.push(g)}
 // decorative cars, plus driveable one
@@ -73,24 +76,24 @@ for(let i=0;i<14;i++){let cx=(Math.floor(Math.random()*7)-3)*48+10,cz=(Math.floo
 for(let i=0;i<16;i++)makeTarget((Math.floor(Math.random()*7)-3)*48+12,(Math.floor(Math.random()*7)-3)*48+12);
 let marker=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,.18,24),new THREE.MeshBasicMaterial({color:0x42ffd0}));marker.position.set(50,.2,0);scene.add(marker);
 let toastT=0;function toast(msg){let el=document.getElementById('toast');el.textContent=msg;el.style.opacity=1;toastT=2.4}
-let keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e'&&started)toggleCar()});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-let started=false;document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';renderer.domElement.requestPointerLock();toast('Checkpoint mission started')};
+let keys={};window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e'&&started)toggleCar();if(started&&['1','2','3'].includes(e.key))chooseTool(Number(e.key));if(started&&e.key.toLowerCase()==='q'){const menu=document.getElementById('loadout');menu.style.display=menu.style.display==='grid'?'none':'grid'}});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let started=false;window.chooseTool=function(n){selectedTool=Math.max(1,Math.min(3,n));document.getElementById('weapon').textContent='LOADOUT: '+toolNames[selectedTool-1];document.getElementById('loadout').style.display='none';toast(toolNames[selectedTool-1]+' selected (arcade)')};document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';renderer.domElement.requestPointerLock();toast('Checkpoint mission started')};
 renderer.domElement.addEventListener('click',()=>{if(started&&document.pointerLockElement!==renderer.domElement)renderer.domElement.requestPointerLock();else if(started)shoot()});
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){camYaw-=e.movementX*.0022;camPitch=Math.max(-.15,Math.min(.65,camPitch+e.movementY*.0015))}});
 const raycaster=new THREE.Raycaster();
-function shoot(){if(car)return;let direction=new THREE.Vector3(Math.sin(camYaw),0,-Math.cos(camYaw));direction.y=Math.sin(camPitch);direction.normalize();raycaster.set(camera.position,direction);let hits=raycaster.intersectObjects(targets,true);if(hits.length){let obj=hits[0].object;while(obj.parent&&!targets.includes(obj))obj=obj.parent;if(targets.includes(obj)){scene.remove(obj);targets.splice(targets.indexOf(obj),1);money+=25;document.getElementById('cash').textContent='$ '+money;toast('Target cleared +$25')}}}
+function shoot(){if(car)return;let direction=new THREE.Vector3(Math.sin(camYaw),0,-Math.cos(camYaw));direction.y=Math.sin(camPitch);direction.normalize();raycaster.set(camera.position,direction);let hits=raycaster.intersectObjects(targets,true);if(hits.length){let obj=hits[0].object;while(obj.parent&&!targets.includes(obj))obj=obj.parent;if(targets.includes(obj)){scene.remove(obj);targets.splice(targets.indexOf(obj),1);money+=25;heat=Math.min(6,heat+1);document.getElementById('cash').textContent='$ '+money;document.getElementById('wanted').textContent='★'.repeat(heat)+'☆'.repeat(6-heat);toast('Training target tagged +$25 · Wanted level increased')}}}
 function toggleCar(){if(!car){if(player.position.distanceTo(driveCar.position)<4){car=driveCar;player.visible=false;toast('Vehicle entered. Drive!')}else toast('Move close to the blue car to enter')}else{player.visible=true;player.position.copy(car.position);player.position.x+=2.8;car=null;toast('Exited vehicle')}}
-let velocity=0;const clock=new THREE.Clock();
+let velocity=0;const clock=new THREE.Clock();function spawnPolice(){if(police.length>=3)return;const g=createCar(player.position.x+25+police.length*10,player.position.z+20,0x253caa);const lightbar=new THREE.Mesh(new THREE.BoxGeometry(1.1,.18,.45),mat(0xff3355));lightbar.position.y=1.95;g.add(lightbar);police.push(g);}
 function update(dt){if(!started)return;
 let forward=keys.w||keys.arrowup,back=keys.s||keys.arrowdown,left=keys.a||keys.arrowleft,right=keys.d||keys.arrowright;
 if(car){let throttle=(forward?1:0)-(back?1:0);velocity+=throttle*18*dt;velocity*=Math.pow(keys.space?.82:.985,dt*60);velocity=Math.max(-8,Math.min(32,velocity));if(left||right)car.rotation.y+=(right?1:-1)*dt*(.8+Math.abs(velocity)*.045)*Math.sign(velocity||1);car.position.x+=Math.sin(car.rotation.y)*velocity*dt;car.position.z+=Math.cos(car.rotation.y)*velocity*dt;player.position.copy(car.position);player.rotation.y=car.rotation.y}
 else{let v=(keys.shift?11:7)*dt;let mx=(right?1:0)-(left?1:0),mz=(back?1:0)-(forward?1:0);let vec=new THREE.Vector3(mx,0,mz);if(vec.length())vec.normalize();vec.applyAxisAngle(new THREE.Vector3(0,1,0),camYaw);player.position.addScaledVector(vec,v);if(vec.length())player.rotation.y=Math.atan2(vec.x,vec.z)}
-if(player.position.distanceTo(marker.position)<4){money+=150;missionNum++;marker.position.set((Math.random()*7-3)*48,0,(Math.random()*7-3)*48);toast('Mission checkpoint reached +$150');}
+if(heat>0&&police.length<Math.min(3,Math.ceil(heat/2)))spawnPolice();for(const cop of police){const dx=player.position.x-cop.position.x,dz=player.position.z-cop.position.z,dist=Math.hypot(dx,dz)||1;cop.rotation.y=Math.atan2(dx,dz);cop.position.x+=(dx/dist)*Math.min(12,4+heat)*dt;cop.position.z+=(dz/dist)*Math.min(12,4+heat)*dt;}if(player.position.distanceTo(marker.position)<4){money+=150;missionNum++;marker.position.set((Math.random()*7-3)*48,0,(Math.random()*7-3)*48);toast('Mission checkpoint reached +$150');}
 marker.rotation.y+=dt*1.2;marker.position.y=.25+Math.sin(clock.elapsedTime*2)*.25;
 }
 function camUpdate(){let focus=car?car.position:player.position;let offset=new THREE.Vector3(Math.sin(camYaw)*10,4.4+camPitch*5,Math.cos(camYaw)*10);camera.position.copy(focus).add(offset);camera.lookAt(focus.x,focus.y+1.3,focus.z)}
 function frame(){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.04);update(dt);camUpdate();if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').style.opacity=0}
-document.getElementById('mission').textContent='Mission '+missionNum+': reach the glowing checkpoint';document.getElementById('mode').textContent=car?'DRIVING':'ON FOOT';document.getElementById('wanted').textContent='★'.repeat(heat)+'☆'.repeat(5-heat);renderer.render(scene,camera)}
+document.getElementById('mission').textContent='Mission '+missionNum+': reach the glowing checkpoint';document.getElementById('mode').textContent=car?'DRIVING':'ON FOOT';document.getElementById('wanted').textContent='★'.repeat(heat)+'☆'.repeat(6-heat);renderer.render(scene,camera)}
 frame();
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script></body></html>
